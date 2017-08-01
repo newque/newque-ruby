@@ -1,0 +1,2 @@
+class NewqueError < StandardError
+end
