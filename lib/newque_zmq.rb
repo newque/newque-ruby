@@ -32,7 +32,7 @@ class Newque_zmq
     @sock.connect "tcp://#{host}:#{port}"
   end
 
-  def write channel, atomic, msgs, ids=[]
+  def write channel, atomic, msgs, ids=nil
     input = Input.new(channel: channel, write_input: Write_Input.new(atomic: atomic, ids: ids))
     buffers = send_request input, msgs
     output = parse_response buffers[1], :write_output

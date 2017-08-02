@@ -1,7 +1,9 @@
 require 'bundler/setup'
-require 'ffi-rzmq'
 require 'beefcake'
+require 'ffi-rzmq'
+require 'faraday'
 require 'securerandom'
+require 'json'
 
 require 'pry'
 
@@ -9,6 +11,7 @@ require './lib/errors'
 require './lib/protobuf'
 require './lib/responses'
 require './lib/newque_zmq'
+require './lib/newque_http'
 
 class Newque
   extend Forwardable

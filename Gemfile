@@ -1,8 +1,9 @@
 source 'https://rubygems.org'
 
 gem 'rspec'
-gem 'ffi-rzmq'
 gem 'beefcake'
+gem 'ffi-rzmq'
+gem 'faraday'
 
 group :development, :test do
   gem 'pry'
