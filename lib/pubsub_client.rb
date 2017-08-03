@@ -4,18 +4,23 @@ class Pubsub_client
 
   attr_reader :sock, :thread
 
-  def initialize host, port, options={}, poll_interval:50
+  def initialize host, port, options={}, poll_interval:100
     @addr = "tcp://#{host}:#{port}"
     @options = compute_options Zmq_tools::BASE_OPTIONS, options
     @poll_interval = poll_interval
+
+    @listeners = {}
+  end
+
+  def subscribe(name, &block)
+    raise "A listener with the name #{name} already exists" if @listeners.has_key? name
+    @listeners[name] = block
+    start_loop unless is_looping?
+    nil
   end
 
   # The socket connection happens here so that no network traffic occurs while not subscribed
-  def subscribe
-    raise newque_error ["Already subscribed, unsubscribe first"] if is_looping?
-
-    @unsubscribe = false
-
+  def start_loop
     @sock = @@ctx.socket ZMQ::SUB
     Zmq_tools.set_zmq_sock_options @sock, @options
 
@@ -27,24 +32,24 @@ class Pubsub_client
 
     @thread = Thread.new do
       loop do
-        buffers = []
+        break if @listeners.empty?
 
-        break if @unsubscribe
-
-        while @poller.poll(@poll_interval) > 0
+        while @poller.poll(@poll_interval) > 0 && !@listeners.empty?
+          buffers = []
           @sock.recv_strings buffers, ZMQ::DONTWAIT
-          yield parse_input buffers
+          @listeners.values.each do |listener|
+            parsed = parse_input buffers
+            listener.call parsed
+          end
         end
 
       end
       @sock.disconnect @addr
     end
-    @thread
   end
 
-  def unsubscribe
-    @unsubscribe = true
-    @thread.join if is_looping?
+  def unsubscribe name
+    @listeners.delete name
     nil
   end
 
