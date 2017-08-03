@@ -1,46 +1,35 @@
 class Newque_http
+  extend Forwardable
 
   BASE_OPTIONS = {
-    https: false
+    https: false,
+    http_format: :json,
+    separator: "\n"
   }
 
+  def_delegators :@instance, :write, :read
+  attr_reader :conn, :options
+
   def initialize host, port, options, timeout
-    https = options[:https].nil? ? BASE_OPTIONS[:https] : options[:https]
-    @conn = Faraday.new({ url: "#{https ? "https" : "http"}://#{host}:#{port}" })
+    @options = compute_options BASE_OPTIONS, options
+    @timeout = timeout / 1000.0
 
+    @conn = Faraday.new({ url: "#{@options[:https] ? "https" : "http"}://#{host}:#{port}" })
+
+    @instance = if @options[:http_format] == :json
+      Http_json.new self
+    elsif @options[:http_format] == :plaintext
+      Http_plaintext.new self
+    end
   end
 
-  def write channel, atomic, msgs, ids=nil
-    body = {
-      'atomic' => false,
-      'messages' => msgs
-    }
-    body["ids"] = ids unless ids.nil?
-    res = @conn.post do |req|
-      req.url "/v1/#{channel}"
-      req.body = body.to_json
-    end
-    parsed = parse_json_response res.body
-    Write_response.new parsed['saved']
-  end
-
-  def read channel, mode, limit=nil
-    res = @conn.get do |req|
-      req.url "/v1/#{channel}"
-      req.headers['newque-mode'] = mode
-      req.headers['newque-read-max'] = limit unless limit.nil?
-    end
-    parsed = parse_json_response res.body
-    Read_response.new(
-      res.headers['newque-response-length'].to_i,
-      res.headers['newque-response-last-id'],
-      res.headers['newque-response-last-ts'].to_i,
-      parsed['messages']
-    )
+  def read_stream channel, mode, limit=nil
+    raise newque_error ["Unimplemented: read_stream"]
   end
 
   def count channel
     res = @conn.get do |req|
+      set_req_options req
       req.url "/v1/#{channel}/count"
     end
     parsed = parse_json_response res.body
@@ -49,6 +38,7 @@ class Newque_http
 
   def delete channel
     res = @conn.delete do |req|
+      set_req_options req
       req.url "/v1/#{channel}"
     end
     parsed = parse_json_response res.body
@@ -57,6 +47,7 @@ class Newque_http
 
   def health channel, global=false
     res = @conn.get do |req|
+      set_req_options req
       req.url "/v1#{global ? '' : '/' + channel}/health"
     end
     parsed = parse_json_response res.body
@@ -64,6 +55,11 @@ class Newque_http
   end
 
   private
+
+  def set_req_options req
+    req.options.open_timeout = @timeout
+    req.options.timeout = @timeout
+  end
 
   def parse_json_response body
     parsed = JSON.parse body

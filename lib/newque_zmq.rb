@@ -1,30 +1,15 @@
 class Newque_zmq
 
-  BASE_OPTIONS = {
-    ZMQ_MAXMSGSIZE: -1,
-    ZMQ_LINGER: 60000,
-    ZMQ_RECONNECT_IVL: 100,
-    ZMQ_RECONNECT_IVL_MAX: 60000,
-    ZMQ_BACKLOG: 100,
-    ZMQ_SNDHWM: 5000,
-    ZMQ_RCVHWM: 5000
-  }
-  # BASE_OPTIONS, with the values being the ZMQ constants for those options
-  ZMQ_OPT_MAPPING = Hash[
-      BASE_OPTIONS.map do |name, value|
-      [name, ZMQ.const_get(name.to_s.slice(4..-1))]
-    end
-  ]
-
   @@ctx = ZMQ::Context.new
 
   attr_reader :sock
 
   def initialize host, port, options, timeout
+    @options = compute_options Zmq_tools::BASE_OPTIONS, options
     @timeout = timeout
 
     @sock = @@ctx.socket ZMQ::DEALER
-    set_zmq_sock_options options
+    Zmq_tools.set_zmq_sock_options @sock, @options
 
     @poller = ZMQ::Poller.new
     @poller.register_readable @sock
@@ -41,8 +26,9 @@ class Newque_zmq
 
   def read channel, mode, limit=nil
     buffers = send_request Input.new(channel: channel, read_input: Read_Input.new(mode: mode, limit: limit))
-    output = parse_response buffers[1], :read_output
-    Read_response.new output.length, output.last_id, output.last_timens, buffers.slice(2, buffers.size)
+    id, buf, *messages = buffers
+    output = parse_response buf, :read_output
+    Read_response.new output.length, output.last_id, output.last_timens, messages
   end
 
   def count channel
@@ -64,12 +50,6 @@ class Newque_zmq
   end
 
   private
-
-  def set_zmq_sock_options options
-    BASE_OPTIONS.each do |name, default_value|
-      @sock.setsockopt ZMQ_OPT_MAPPING[name], (options[name] || default_value)
-    end
-  end
 
   def send_request input, msgs=[]
     id = SecureRandom.uuid
@@ -101,10 +81,6 @@ class Newque_zmq
       raise newque_error output.errors
     end
     output.send type
-  end
-
-  def time_ms
-    (Time.now.to_f * 1000).to_i
   end
 
 end
