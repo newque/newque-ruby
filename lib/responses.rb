@@ -75,16 +75,16 @@ class Health_request
 end
 
 class Input_request
-  attr_reader :channel, :payload, :messages
+  attr_reader :channel, :action, :messages
 
-  def initialize channel, payload, messages
+  def initialize channel, action, messages
     @channel = channel
-    @payload = payload
+    @action = action
     @messages = messages
   end
 
   def to_s
-    "<Newque_input channel: #{channel.to_json} payload: #{@payload} #{@messages.size > 0 ? 'messages: ' + @messages.to_json : ''}>"
+    "<Newque_input channel: #{channel.to_json} action: #{@action} #{@messages.size > 0 ? 'messages: ' + @messages.to_json : ''}>"
   end
 
   def inspect
@@ -121,7 +121,7 @@ class Read_response
   end
 
   def to_s
-    "<Newque_read length: #{length.to_json} last_id: #{last_id.to_json} last_timens: #{last_timens.to_json} messages: #{messages.to_json}>"
+    "<Newque_read length: #{length.to_json} last_id: #{last_id.to_json} last_timens: #{last_timens.to_json} messages: #{messages}>"
   end
 
   def inspect

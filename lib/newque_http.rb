@@ -11,6 +11,8 @@ class Newque_http
   attr_reader :conn, :options
 
   def initialize host, port, options, timeout
+    @host = host
+    @port = port
     @options = compute_options BASE_OPTIONS, options
     @timeout = timeout / 1000.0
 
@@ -24,7 +26,33 @@ class Newque_http
   end
 
   def read_stream channel, mode, limit=nil
-    raise newque_error ["Unimplemented: read_stream"]
+    Enumerator.new do |generator|
+      Net::HTTP.start(@host, @port) do |http|
+        req = Net::HTTP::Get.new "/v1/#{channel}"
+        req['newque-mode'] = mode
+        req['newque-read-max'] = limit unless limit.nil?
+        req['Transfer-Encoding'] = 'chunked'
+        http.open_timeout = @timeout
+        http.read_timeout = @timeout
+
+        http.request req do |res|
+          if res.code != '200'
+            generator << parse_json_response(res.body) # Will throw
+          else
+            leftover = nil
+            res.read_body do |chunk|
+              lines = "#{leftover || ''}#{chunk}".split(@options[:separator], -1)
+              *fulls, partial = lines
+              fulls.each do |msg|
+                generator << msg
+              end
+              leftover = partial
+            end
+            generator << leftover unless leftover.nil?
+          end
+        end
+      end
+    end
   end
 
   def count channel

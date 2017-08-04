@@ -4,6 +4,7 @@ require 'ffi-rzmq'
 require 'faraday'
 require 'securerandom'
 require 'json'
+require 'net/http'
 
 require 'pry'
 

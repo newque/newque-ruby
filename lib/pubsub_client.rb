@@ -4,10 +4,10 @@ class Pubsub_client
 
   attr_reader :sock, :thread
 
-  def initialize host, port, options={}, poll_interval:100
+  def initialize host, port, options={}, disconnection_delay:100
     @addr = "tcp://#{host}:#{port}"
     @options = compute_options Zmq_tools::BASE_OPTIONS, options
-    @poll_interval = poll_interval
+    @disconnection_delay = disconnection_delay
 
     @listeners = {}
   end
@@ -34,7 +34,7 @@ class Pubsub_client
       loop do
         break if @listeners.empty?
 
-        while @poller.poll(@poll_interval) > 0 && !@listeners.empty?
+        while @poller.poll(@disconnection_delay) > 0 && !@listeners.empty?
           buffers = []
           @sock.recv_strings buffers, ZMQ::DONTWAIT
           @listeners.values.each do |listener|
@@ -63,7 +63,7 @@ class Pubsub_client
     buf, *messages = buffers
     input = Input.decode buf
 
-    payload = if !input.write_input.nil?
+    action = if !input.write_input.nil?
       Write_request.new input.write_input.atomic, input.write_input.ids
     elsif !input.read_input.nil?
       Read_request.new input.read_input.mode, input.read_input.limit
@@ -77,7 +77,7 @@ class Pubsub_client
       raise newque_error ["Cannot find a valid message type"]
     end
 
-    Input_request.new input.channel, payload, messages
+    Input_request.new input.channel, action, messages
   end
 
 end
