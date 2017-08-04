@@ -1,10 +1,8 @@
 class Pubsub_client
-
-  @@ctx = ZMQ::Context.new
-
   attr_reader :sock, :thread
 
   def initialize host, port, options={}, disconnection_delay:100
+    @ctx = ZMQ::Context.new
     @addr = "tcp://#{host}:#{port}"
     @options = compute_options Zmq_tools::BASE_OPTIONS, options
     @disconnection_delay = disconnection_delay
@@ -12,7 +10,7 @@ class Pubsub_client
     @listeners = {}
   end
 
-  def subscribe(name, &block)
+  def subscribe name, &block
     raise "A listener with the name #{name} already exists" if @listeners.has_key? name
     @listeners[name] = block
     start_loop unless is_looping?
@@ -21,7 +19,7 @@ class Pubsub_client
 
   # The socket connection happens here so that no network traffic occurs while not subscribed
   def start_loop
-    @sock = @@ctx.socket ZMQ::SUB
+    @sock = @ctx.socket ZMQ::SUB
     Zmq_tools.set_zmq_sock_options @sock, @options
 
     @poller = ZMQ::Poller.new
