@@ -1,6 +1,6 @@
 require './newque'
 
-newque_zmq = Client.new :zmq, '127.0.0.1', 8005
+newque_zmq = Newque::Client.new :zmq, '127.0.0.1', 8005
 
 i = 1
 

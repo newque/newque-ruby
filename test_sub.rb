@@ -1,6 +1,6 @@
 require './newque'
 
-newque_pubsub = Pubsub_client.new '127.0.0.1', 8006
+newque_pubsub = Newque::Pubsub_client.new '127.0.0.1', 8006
 
 def print_stuff stuff
   # binding.pry
