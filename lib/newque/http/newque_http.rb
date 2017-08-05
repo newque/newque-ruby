@@ -103,7 +103,7 @@ module Newque
     def parse_json_response body
       parsed = JSON.parse body
       if parsed['errors'].size > 0
-        raise newque_error parsed['errors']
+        raise Util.newque_error parsed['errors']
       end
       parsed
     end

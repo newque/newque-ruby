@@ -9,7 +9,7 @@ module Newque
 
     def write channel, atomic, msgs, ids=nil
       head, *tail = msgs
-      raise newque_error ["No messages given"] if head.nil?
+      raise NewqueError.new("No messages given") if head.nil?
 
       stream = StringIO.new
       stream.write head

@@ -109,7 +109,7 @@ module Newque
     def parse_response buffer, type
       output = Output.decode buffer
       if output.errors
-        raise newque_error output.errors
+        raise Util.newque_error output.errors
       end
       output.send type
     end

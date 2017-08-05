@@ -76,7 +76,7 @@ module Newque
       elsif !input.health_input.nil?
         Health_request.new input.health_input.global
       else
-        raise newque_error ["Cannot find a valid message type"]
+        raise NewqueError.new "Cannot find a valid message type"
       end
 
       Input_request.new input.channel, action, messages

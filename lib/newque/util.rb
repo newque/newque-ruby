@@ -14,6 +14,14 @@ module Newque
       (Time.now.to_f * 1000).to_i
     end
 
+    def self.newque_error errors
+      NewqueError.new "Client Error#{errors.size > 1 ? 's' : ''}: #{errors.join(', ')}"
+    end
+
+    def self.zmq_error error
+      NewqueError.new "Network Error: #{error}"
+    end
+
   end
 
 end
