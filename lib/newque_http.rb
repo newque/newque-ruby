@@ -56,30 +56,36 @@ class Newque_http
   end
 
   def count channel
-    res = @conn.get do |req|
-      set_req_options req
-      req.url "/v1/#{channel}/count"
+    Thread.new do
+      res = @conn.get do |req|
+        set_req_options req
+        req.url "/v1/#{channel}/count"
+      end
+      parsed = parse_json_response res.body
+      Count_response.new parsed['count']
     end
-    parsed = parse_json_response res.body
-    Count_response.new parsed['count']
   end
 
   def delete channel
-    res = @conn.delete do |req|
-      set_req_options req
-      req.url "/v1/#{channel}"
+    Thread.new do
+      res = @conn.delete do |req|
+        set_req_options req
+        req.url "/v1/#{channel}"
+      end
+      parsed = parse_json_response res.body
+      Delete_response.new
     end
-    parsed = parse_json_response res.body
-    Delete_response.new
   end
 
   def health channel, global=false
-    res = @conn.get do |req|
-      set_req_options req
-      req.url "/v1#{global ? '' : '/' + channel}/health"
+    Thread.new do
+      res = @conn.get do |req|
+        set_req_options req
+        req.url "/v1#{global ? '' : '/' + channel}/health"
+      end
+      parsed = parse_json_response res.body
+      Health_response.new
     end
-    parsed = parse_json_response res.body
-    Health_response.new
   end
 
   private
