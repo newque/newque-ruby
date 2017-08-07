@@ -11,7 +11,6 @@ module Newque
       @producer2 = Client.new(:zmq, '127.0.0.1', 8005)
       @consumer1 = Pubsub_client.new '127.0.0.1', 8006
       @consumer2 = Pubsub_client.new '127.0.0.1', 8006
-      @subscriptions = []
     end
 
     it 'subscribes' do
@@ -36,8 +35,8 @@ module Newque
         received2.concat input.messages
         Util.resolve_t(thread2, '') if received2.size == (num_sent * 2)
       }
-
-      @subscriptions.concat [ready1.value, ready2.value]
+      ready1.join
+      ready2.join
 
       num_sent.times do |i|
         @producer1.write(channel, false, [i.to_s]).join
@@ -56,7 +55,7 @@ module Newque
       ready1 = @consumer1.subscribe {
         raise 'BOOM'
       }
-      @subscriptions = [ready1.value]
+      ready1.join
       @consumer1.add_error_handler do |error|
         Util.resolve_t(thread, error.to_s)
       end
@@ -75,7 +74,6 @@ module Newque
         Util.resolve_t thread, input.messages.first
       end
       id = ready.value
-      @subscriptions = [id]
 
       # Message 1
       @producer1.write(channel, false, ['MSG1']).join
@@ -104,39 +102,38 @@ module Newque
 
     it 'disconnects' do
       received = []
-      thread = Util.wait_t
+      thread1 = Util.wait_t
 
       # Subscribe
       ready = @consumer1.subscribe do |input|
-        received << input.messages.first
-        Util.resolve_t thread, input.messages.first
+        received << "FROM_1 #{input.messages.first}"
+        Util.resolve_t thread1, input.messages.first
       end
       id = ready.value
-      @subscriptions = [id]
 
       # Message 1
       @producer1.write(channel, false, ['MSG1']).join
-      expect(thread.value).to eq 'MSG1'
+      expect(thread1.value).to eq 'MSG1'
 
       # Disconnect
-      thread = Util.wait_t
+      thread2 = Util.wait_t
       @consumer1.disconnect
 
       # Message 2
       @producer1.write(channel, false, ['MSG2']).join
-      expect(thread.join(1)).to be_nil # nothing was received
+      expect(thread2.join(1)).to be_nil # nothing was received
 
       # Reconnect and Resubscribe
-      ready = @consumer1.subscribe do |input|
-        received << input.messages.first
-        Util.resolve_t thread, input.messages.first
+      ready = @consumer2.subscribe do |input|
+        received << "FROM_2 #{input.messages.first}"
+        Util.resolve_t thread2, input.messages.first
       end
       ready.join
 
       # Message 3
       @producer1.write(channel, false, ['MSG3']).join
-      expect(thread.value).to eq 'MSG3'
-      expect(received).to eq ['MSG1', 'MSG3', 'MSG3']
+      expect(thread2.value).to eq 'MSG3'
+      expect(received.sort).to eq ['FROM_1 MSG1', 'FROM_1 MSG2', 'FROM_2 MSG3']
     end
 
   end

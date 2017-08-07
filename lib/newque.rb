@@ -12,3 +12,4 @@ require 'newque/http/newque_http'
 
 require 'newque/clients/client'
 require 'newque/clients/pubsub_client'
+require 'newque/clients/fifo_client'

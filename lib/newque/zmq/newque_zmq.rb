@@ -91,7 +91,7 @@ module Newque
           end
 
           thread.thread_variable_set :result, frames
-          thread.run
+          thread.run if thread.status == 'sleep' # 'if' not necessary, it's a sanity check
         end
       end
     end
