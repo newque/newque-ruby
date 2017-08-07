@@ -22,6 +22,21 @@ module Newque
       NewqueError.new "Network Error: #{error}"
     end
 
+    def self.wait_t
+      t = Thread.new do
+        while Thread.current.thread_variable_get(:result).nil?
+          sleep 0
+        end
+        Thread.current.thread_variable_get(:result)
+      end
+      t.priority = -1
+      t
+    end
+
+    def self.resolve_t thread, result
+      thread.thread_variable_set(:result, result)
+    end
+
   end
 
 end

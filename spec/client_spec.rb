@@ -14,14 +14,12 @@ module Newque
         expect(read.messages.size).to eq num
       end
 
-      let(:bin_str) { (0..127).to_a.pack('c*').gsub("\n", "") }
-
       before(:each) do
         client.delete(channel).join
       end
 
       it "#{name} should write" do
-        write = client.write(channel, false, ['msg1', 'msg2', bin_str]).value
+        write = client.write(channel, false, ['msg1', 'msg2', Helpers.bin_str]).value
         expect(write.class).to eq Write_response
         expect(write.saved).to eq 3
       end
@@ -45,10 +43,10 @@ module Newque
       end
 
       it "#{name} should read binary data correctly" do
-        client.write(channel, false, [bin_str]).join
+        client.write(channel, false, [Helpers.bin_str]).join
         read = client.read(channel, "one").value
-        expect(read.messages.first.length).to eq bin_str.length
-        expect(read.messages.first).to eq bin_str
+        expect(read.messages.first.length).to eq Helpers.bin_str.length
+        expect(read.messages.first).to eq Helpers.bin_str
       end
 
       it "#{name} should count" do
@@ -99,7 +97,7 @@ module Newque
         it "#{name} should support Read Stream" do
           client.delete(channel).join
           num_batches = 25
-          batch_size = 1000
+          batch_size = 100
           num_batches.times do |i|
             write = client.write(channel, false, Helpers.make_msgs(batch_size, from:(i*batch_size))).value
             expect(write.saved).to eq batch_size
