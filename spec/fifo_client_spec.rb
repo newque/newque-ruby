@@ -8,7 +8,6 @@ module Newque
 
     before(:each) do
       @producer1 = Client.new(:zmq, '127.0.0.1', 8005)
-      @producer2 = Client.new(:zmq, '127.0.0.1', 8005)
       @consumer1 = Fifo_client.new '127.0.0.1', 8007
       @consumer2 = Fifo_client.new '127.0.0.1', 8007
     end

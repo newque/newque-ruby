@@ -7,7 +7,7 @@ module Newque
     let(:channel) { 'example_pubsub' }
 
     before(:each) do
-      @producer1 = Client.new(:zmq, '127.0.0.1', 8005)
+      @producer1 = Client.new(:http, '127.0.0.1', 8000)
       @producer2 = Client.new(:zmq, '127.0.0.1', 8005)
       @consumer1 = Pubsub_client.new '127.0.0.1', 8006
       @consumer2 = Pubsub_client.new '127.0.0.1', 8006

@@ -6,10 +6,10 @@ module Newque
 
     STATES = [:NEW, :CONNECTING, :RUNNING, :DISCONNECTING, :CLOSING, :CLOSED]
 
-    def initialize host, port, options:{}, socket_wait:100
+    def initialize host, port, protocol_options:{}, socket_wait:100
       @ctx = ZMQ::Context.new
       @addr = "tcp://#{host}:#{port}"
-      @options = Util.compute_options Zmq_tools::BASE_OPTIONS, options
+      @options = Util.compute_options Zmq_tools::BASE_OPTIONS, protocol_options
       @socket_wait = socket_wait
       @state = 0
     end

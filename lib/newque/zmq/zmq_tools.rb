@@ -10,6 +10,7 @@ module Newque
       ZMQ_RECONNECT_IVL: 100,
       ZMQ_RECONNECT_IVL_MAX: 60000,
       ZMQ_BACKLOG: 100,
+      ZMQ_SNDHWM: 5000,
       ZMQ_RCVHWM: 5000
     }
     # BASE_OPTIONS, with the values being the ZMQ constants for those options
