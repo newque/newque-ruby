@@ -125,7 +125,7 @@ response.saved # => 5
 #### Read_response
 ```ruby
 response = Newque::Read_response.new(2, 'some-id', 12345678, ['msg1', 'msg2'])
-response.length # => 5
+response.length # => 2
 response.last_id # => 'some-id'
 response.last_timens # => '12345678'
 response.messages # => ['msg1', 'msg2']
@@ -156,6 +156,7 @@ These objects are given to `Newque::Fifo_client`s and `Newque::Pubsub_client`s w
 request = Newque::Write_request.new(false, ['id1', 'id2'])
 request.atomic # => false
 request.ids # => ['id1', 'id2']
+request.messages # => an array of messages
 ```
 
 #### Read_request
