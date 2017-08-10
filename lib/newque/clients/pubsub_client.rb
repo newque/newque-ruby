@@ -32,6 +32,18 @@ module Newque
       end
     end
 
+    def unsubscribe id
+      @listeners.delete id
+      nil
+    end
+
+    def disconnect
+      @disconnect = true
+      nil
+    end
+
+    private
+
     # The socket connection happens here so that no network traffic occurs while not subscribed
     def start_loop
       @disconnect = false
@@ -74,18 +86,6 @@ module Newque
       end
       @ready
     end
-
-    def unsubscribe id
-      @listeners.delete id
-      nil
-    end
-
-    def disconnect
-      @disconnect = true
-      nil
-    end
-
-    private
 
     def is_looping?
       !@thread.nil? && @thread.alive?
