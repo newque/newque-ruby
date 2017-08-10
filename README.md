@@ -303,17 +303,18 @@ You'll need 2 terminals windows!
 docker pull newque/newque:v0.0.5
 
 docker run -it -p 8000:8000 -p 8001:8001 -p 8005:8005 -p 8006:8006 -p 8007:8007 newque/newque:v0.0.5 bash
+cd newque
+rm -r conf
 
 # Switch to terminal 2
 
-# Grab the Container ID
+# Grab the Container ID:
 docker ps
 
 # Replace the CONTAINER_ID in this command and make sure you're in the newque-ruby/ directory:
 docker cp conf CONTAINER_ID:/newque/conf
 
-# Go back to terminal 1, which is bash running inside Docker
-cd newque
+# Go back to terminal 1
 ./newque
 
 # Switch to terminal 2
