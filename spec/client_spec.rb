@@ -106,13 +106,13 @@ module Newque
           end
 
           counter = 0
-          # TODO: Fix Limit
-          enum = client.read_stream channel, "many #{num_batches * batch_size}" #, limit:100
+          enum = client.read_stream channel, "many #{num_batches * batch_size}", 2000
           enum.each.with_index do |x, i|
             expect("msg#{i}").to eq x
             counter = counter + 1
           end
-          expect(counter).to eq(num_batches * batch_size)
+          # 25*100 = 2500, but we requested up to 2000
+          expect(counter).to eq(2000)
         end
       }
 
