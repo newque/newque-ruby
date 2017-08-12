@@ -1,6 +1,7 @@
 require 'newque/errors'
 require 'newque/util'
 require 'newque/responses'
+require 'newque/future'
 
 require 'newque/zmq/protobuf'
 require 'newque/zmq/zmq_tools'

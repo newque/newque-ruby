@@ -26,10 +26,11 @@ module Newque
       id = SecureRandom.uuid
       @listeners[id] = block
       start_loop unless is_looping?
-      Thread.new do
+      thread = Thread.new do
         @ready.join(1)
         id
       end
+      Future.new thread, 10
     end
 
     def unsubscribe id
@@ -65,10 +66,10 @@ module Newque
           next if @poller.poll(@socket_wait) == 0
           buffers = []
           @sock.recv_strings buffers, ZMQ::DONTWAIT
-          parsed = Zmq_tools.parse_input buffers
+          input = Zmq_tools.parse_input buffers
           @listeners.values.each do |listener|
             begin
-              listener.(parsed)
+              listener.(input)
             rescue => listener_error
               print_uncaught_exception(listener_error, 'subscribe') if @error_handlers.size == 0
               @error_handlers.each do |err_handler|
@@ -84,7 +85,7 @@ module Newque
         @sock.disconnect @addr
         @sock.close
       end
-      @ready
+      @thread.abort_on_exception = true
     end
 
     def is_looping?

@@ -75,7 +75,7 @@ module Newque
         next_state :CLOSED
       end
       @thread.abort_on_exception = true
-      ready
+      Future.new ready, 10
     end
 
     def disconnect

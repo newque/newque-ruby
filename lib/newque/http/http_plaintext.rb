@@ -20,7 +20,7 @@ module Newque
         end
       end
 
-      Thread.new do
+      thread = Thread.new do
         res = @http.conn.post do |req|
           @http.send :set_req_options, req
           req.url "/v1/#{channel}"
@@ -36,10 +36,11 @@ module Newque
         parsed = @http.send :parse_json_response, res.body
         Write_response.new parsed['saved']
       end
+      Future.new thread, @http.timeout
     end
 
     def read channel, mode, limit=nil
-      Thread.new do
+      thread = Thread.new do
         res = @http.conn.get do |req|
           @http.send :set_req_options, req
           req.url "/v1/#{channel}"
@@ -57,6 +58,7 @@ module Newque
           @http.send :parse_json_response, res.body
         end
       end
+      Future.new thread, @http.timeout
     end
 
   end

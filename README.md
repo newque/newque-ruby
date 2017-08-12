@@ -4,8 +4,24 @@ Official gem for [Newque](https://github.com/newque/newque). It offers a high le
 
 See the [Newque documentation](https://github.com/newque/newque) for more information about configuring Newque for your use case.
 
-## Client
+## Install
+Requirements:
 
+- libffi
+- libzmq
+
+Mac:
+```bash
+brew install libffi zeromq
+```
+Linux:
+```bash
+sudo apt-get install libffi-dev libzmq5
+```
+
+Then add `gem 'newque'` to your Gemfile.
+
+## Client
 A Client is the main way to interact with Newque. Clients can send requests to Newque (Write, Read, Count, etc.) and receive responses for those requests. Every operation is *concurrent*, meaning that you can send multiple requests at the same time and wait until they all complete. These requests will be executing in parallel in the background. Read the short [Newque-Ruby Concurrency Guide](#newque-ruby-concurrency-guide) for a refresher on concurrency in Ruby.
 
 ```ruby
@@ -173,25 +189,27 @@ The [Thread](https://ruby-doc.org/core-2.2.0/Thread.html) is Ruby's basic concur
 
 Newque-Ruby makes heavy use of Threads, since for example, a Pubsub Client waiting for requests should not "take up" your only allowed active Ruby Thread!
 
-If you are familiar with Promises or Futures in other languages, the Threads returned by Newque-Ruby are very similar.
+If you are familiar with Promises or Futures in other languages, the Future objects returned by Newque-Ruby are very similar.
 
-Most gems simply block and assume the user will wrap those blocking calls in a `Thread.new` if they feel brave. Due to the fact that a Newque::Client with ZMQ uses a single multiplexing connection (unlike HTTP) and that we want operations (writes, reads, etc.) -which can terminate in a different order- to be executed in parallel, Newque-Ruby operations have to return Threads that will *resolve* to the desired result. In order to keep Newque::Clients with HTTP identical to ZMQ ones, those return Threads too.
+Most gems simply block and assume the user will wrap those blocking calls in a `Thread.new` if they feel brave. Due to the fact that a Newque::Client with ZMQ uses a single multiplexing connection (unlike HTTP) and that we want operations (writes, reads, etc.) -which can terminate in a different order- to be executed in parallel, Newque-Ruby operations have to return Futures that will *resolve* to the desired result. In order to keep Newque::Clients with HTTP identical to ZMQ ones, those return Futures too.
 
 **What you need to know:**
 
-To get the result of an operation, you have to call `.value` on the Thread returned by Newque-Ruby.
+To get the result of an operation, you have to call `.get` on the Future returned by Newque-Ruby.
 
-- `client.delete('mychannel').join(limit)` will wait for the Thread returned by `.delete` to resolve for up to `limit` seconds (or forever if no limit is passed). If it timed out, `.join` will return `nil`, otherwise it returns the Thread itself.
-- Calling `.value` on a Thread will wait forever for it to resolve, and then return its value.
+- `client.delete('mychannel').get(limit)` will wait for the Future returned by `.delete` to resolve for up to `limit` seconds. If it times out, `.get` will raise `Timeout::Error`.
+- The `limit` argument is optional, it defaults to the `timeout` value passed when creating the Client.
 
 ```ruby
-done = client.delete('mychannel').join(5)
-raise 'Timeout!' if done.nil?
+future1 = client.write('channel_a', false, ['msg1'])
+future2 = client.write('channel_b', false, ['msg1'])
 
-# If we're here, the `done` Thread has resolved
-result = done.value # Always instantaneous
+result1 = future1.get
+result2 = future1.get
+
+# Do something with the results
 ```
-The above snippet will wait for up to 5 seconds for the call to complete, then put the result in `result`. Otherwise, it'll raise an exception.
+This snippet makes 2 calls in parallel and waits until both have completed to continue.
 
 ## Protocol Options
 
@@ -295,7 +313,7 @@ request.global # => false
 ```
 
 ## Running the tests
-Make sure the dev dependencies are installed first.
+Make sure the Gem dev dependencies are installed first.
 
 You'll need 2 terminals windows!
 ```bash

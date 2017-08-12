@@ -7,10 +7,12 @@ module Newque
     let(:channel) { 'example_pubsub' }
 
     before(:each) do
-      @producer1 = Client.new(:http, '127.0.0.1', 8000)
-      @producer2 = Client.new(:zmq, '127.0.0.1', 8005)
-      @consumer1 = Pubsub_client.new '127.0.0.1', 8006
-      @consumer2 = Pubsub_client.new '127.0.0.1', 8006
+      host = '127.0.0.1'
+      timeout = 3000
+      @producer1 = Client.new(:http, host, 8000, timeout:timeout)
+      @producer2 = Client.new(:zmq, host, 8005, timeout:timeout)
+      @consumer1 = Pubsub_client.new host, 8006
+      @consumer2 = Pubsub_client.new host, 8006
     end
 
     it 'subscribes' do
@@ -35,12 +37,12 @@ module Newque
         received2.concat input.messages
         Util.resolve_t(thread2, '') if received2.size == (num_sent * 2)
       }
-      ready1.join
-      ready2.join
+      ready1.get
+      ready2.get
 
       num_sent.times do |i|
-        @producer1.write(channel, false, [i.to_s]).join
-        @producer2.write(channel, false, [i.to_s]).join
+        @producer1.write(channel, false, [i.to_s]).get
+        @producer2.write(channel, false, [i.to_s]).get
         2.times { should_receive << i.to_s }
       end
 
@@ -55,11 +57,11 @@ module Newque
       ready1 = @consumer1.subscribe {
         raise 'BOOM'
       }
-      ready1.join
+      ready1.get
       @consumer1.add_error_handler do |error|
         Util.resolve_t(thread, error.to_s)
       end
-      @producer1.write(channel, false, ['stuff']).join
+      @producer1.write(channel, false, ['stuff']).get
       thread.join(1)
       expect(thread.value).to eq 'BOOM'
     end
@@ -73,10 +75,10 @@ module Newque
         received << input.messages.first
         Util.resolve_t thread, input.messages.first
       end
-      id = ready.value
+      id = ready.get
 
       # Message 1
-      @producer1.write(channel, false, ['MSG1']).join
+      @producer1.write(channel, false, ['MSG1']).get
       expect(thread.value).to eq 'MSG1'
 
       # Unsubscribe
@@ -84,7 +86,7 @@ module Newque
       @consumer1.unsubscribe id
 
       # Message 2
-      @producer1.write(channel, false, ['MSG2']).join
+      @producer1.write(channel, false, ['MSG2']).get
       expect(thread.join(1)).to be_nil # nothing was received
 
       # Resubscribe
@@ -92,10 +94,10 @@ module Newque
         received << input.messages.first
         Util.resolve_t thread, input.messages.first
       end
-      ready.join
+      ready.get
 
       # Message 3
-      @producer1.write(channel, false, ['MSG3']).join
+      @producer1.write(channel, false, ['MSG3']).get
       expect(thread.value).to eq 'MSG3'
       expect(received).to eq ['MSG1', 'MSG3']
     end
@@ -109,10 +111,10 @@ module Newque
         received << "FROM_1 #{input.messages.first}"
         Util.resolve_t thread1, input.messages.first
       end
-      id = ready.value
+      id = ready.get
 
       # Message 1
-      @producer1.write(channel, false, ['MSG1']).join
+      @producer1.write(channel, false, ['MSG1']).get
       expect(thread1.value).to eq 'MSG1'
 
       # Disconnect
@@ -120,7 +122,7 @@ module Newque
       @consumer1.disconnect
 
       # Message 2
-      @producer1.write(channel, false, ['MSG2']).join
+      @producer1.write(channel, false, ['MSG2']).get
       expect(thread2.join(1)).to be_nil # nothing was received
 
       # Reconnect and Resubscribe
@@ -128,10 +130,10 @@ module Newque
         received << "FROM_2 #{input.messages.first}"
         Util.resolve_t thread2, input.messages.first
       end
-      ready.join
+      ready.get
 
       # Message 3
-      @producer1.write(channel, false, ['MSG3']).join
+      @producer1.write(channel, false, ['MSG3']).get
       expect(thread2.value).to eq 'MSG3'
       expect(received.sort).to eq ['FROM_1 MSG1', 'FROM_1 MSG2', 'FROM_2 MSG3']
     end

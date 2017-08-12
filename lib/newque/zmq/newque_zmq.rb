@@ -9,7 +9,7 @@ module Newque
     def initialize host, port, options, timeout
       @ctx = ZMQ::Context.new
       @options = Util.compute_options Zmq_tools::BASE_OPTIONS, options
-      @timeout = timeout
+      @timeout = timeout / 1000.0
 
       @sock = @ctx.socket ZMQ::DEALER
       Zmq_tools.set_zmq_sock_options @sock, @options
@@ -20,6 +20,7 @@ module Newque
       @router = {}
       @sock.connect "tcp://#{host}:#{port}"
       start_loop
+      @thread
     end
 
     def write channel, atomic, msgs, ids=nil
@@ -73,7 +74,7 @@ module Newque
       meta = input.encode.to_s
       thread = register id, &block
       @sock.send_strings (msgs.size > 0 ? [id, meta] + msgs : [id, meta]), ZMQ::DONTWAIT
-      thread
+      Future.new thread, @timeout
     end
 
     def start_loop
@@ -94,6 +95,7 @@ module Newque
           thread.run if thread.status == 'sleep' # 'if' not necessary, it's a sanity check
         end
       end
+      @thread.abort_on_exception = true
     end
 
     def register id

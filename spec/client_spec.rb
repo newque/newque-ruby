@@ -15,58 +15,58 @@ module Newque
       end
 
       before(:each) do
-        client.delete(channel).join
+        client.delete(channel).get
       end
 
       it "#{name} should write" do
-        write = client.write(channel, false, ['msg1', 'msg2', Helpers.bin_str]).value
+        write = client.write(channel, false, ['msg1', 'msg2', Helpers.bin_str]).get
         expect(write.class).to eq Write_response
         expect(write.saved).to eq 3
       end
 
       it "#{name} should read nothing" do
-        read = client.read(channel, "one").value
+        read = client.read(channel, "one").get
         expect(read.class).to eq Read_response
         expect(read.length).to eq 0
       end
 
       it "#{name} should read messages" do
-        client.write(channel, false, Helpers.make_msgs(5)).join
-        read = client.read(channel, "one").value
+        client.write(channel, false, Helpers.make_msgs(5)).get
+        read = client.read(channel, "one").get
         validate_read read, 1
 
-        read = client.read(channel, "many 3").value
+        read = client.read(channel, "many 3").get
         validate_read read, 3
 
-        read = client.read(channel, "after_id #{read.last_id}").value
+        read = client.read(channel, "after_id #{read.last_id}").get
         validate_read read, 2
       end
 
       it "#{name} should read binary data correctly" do
-        client.write(channel, false, [Helpers.bin_str]).join
-        read = client.read(channel, "one").value
+        client.write(channel, false, [Helpers.bin_str]).get
+        read = client.read(channel, "one").get
         expect(read.messages.first.length).to eq Helpers.bin_str.length
         expect(read.messages.first).to eq Helpers.bin_str
       end
 
       it "#{name} should count" do
-        count = client.count(channel).value
+        count = client.count(channel).get
         expect(count.class).to eq Count_response
         expect(count.count).to eq 0
 
-        client.write(channel, false, Helpers.make_msgs(5)).value
-        count = client.count(channel).value
+        client.write(channel, false, Helpers.make_msgs(5)).get
+        count = client.count(channel).get
         expect(count.class).to eq Count_response
         expect(count.count).to eq 5
       end
 
       it "#{name} should check health" do
-        health = client.health(channel).value
+        health = client.health(channel).get
         expect(health.class).to eq Health_response
       end
 
       it "#{name} should check health globally" do
-        health = client.health(channel, true).value
+        health = client.health(channel, true).get
         expect(health.class).to eq Health_response
       end
 
@@ -74,19 +74,21 @@ module Newque
         write1 = client.write(channel, false, Helpers.make_msgs(5))
         write2 = client.write(channel, false, Helpers.make_msgs(3))
 
-        expect(write2.value.saved).to eq 3
-        expect(write1.value.saved).to eq 5
+        expect(write2.get.saved).to eq 3
+        expect(write1.get.saved).to eq 5
       end
 
       it "#{name} should pass errors" do
         write = client.write('invalid_channel', false, Helpers.make_msgs(5))
-        expect { write.value }.to raise_error NewqueError
+        expect { write.get }.to raise_error NewqueError
       end
     }
 
-    zmq_client = Client.new(:zmq, '127.0.0.1', 8005)
-    http_json_client = Client.new(:http, '127.0.0.1', 8000)
-    http_plaintext_client = Client.new(:http, '127.0.0.1', 8000, protocol_options:{http_format: :plaintext})
+    host = '127.0.0.1'
+    timeout = 3000
+    zmq_client = Client.new(:zmq, host, 8005, timeout:timeout)
+    http_json_client = Client.new(:http, host, 8000, timeout:timeout)
+    http_plaintext_client = Client.new(:http, host, 8000, protocol_options:{http_format: :plaintext}, timeout:timeout)
 
     run_shared_tests.('ZMQ', zmq_client, 'example')
     run_shared_tests.('HTTP JSON', http_json_client, 'example')
@@ -95,11 +97,11 @@ module Newque
     describe 'HTTP-specific' do
       run_http_tests = -> (name, client, channel) {
         it "#{name} should support Read Stream" do
-          client.delete(channel).join
+          client.delete(channel).get
           num_batches = 25
           batch_size = 100
           num_batches.times do |i|
-            write = client.write(channel, false, Helpers.make_msgs(batch_size, from:(i*batch_size))).value
+            write = client.write(channel, false, Helpers.make_msgs(batch_size, from:(i*batch_size))).get
             expect(write.saved).to eq batch_size
           end
 

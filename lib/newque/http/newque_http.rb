@@ -13,7 +13,7 @@ module Newque
     }
 
     def_delegators :@instance, :write, :read
-    attr_reader :conn, :options
+    attr_reader :conn, :options, :timeout
 
     def initialize host, port, options, timeout
       @host = host
@@ -61,7 +61,7 @@ module Newque
     end
 
     def count channel
-      Thread.new do
+      thread = Thread.new do
         res = @conn.get do |req|
           set_req_options req
           req.url "/v1/#{channel}/count"
@@ -69,10 +69,11 @@ module Newque
         parsed = parse_json_response res.body
         Count_response.new parsed['count']
       end
+      Future.new thread, @timeout
     end
 
     def delete channel
-      Thread.new do
+      thread = Thread.new do
         res = @conn.delete do |req|
           set_req_options req
           req.url "/v1/#{channel}"
@@ -80,10 +81,11 @@ module Newque
         parsed = parse_json_response res.body
         Delete_response.new
       end
+      Future.new thread, @timeout
     end
 
     def health channel, global=false
-      Thread.new do
+      thread = Thread.new do
         res = @conn.get do |req|
           set_req_options req
           req.url "/v1#{global ? '' : '/' + channel}/health"
@@ -91,6 +93,7 @@ module Newque
         parsed = parse_json_response res.body
         Health_response.new
       end
+      Future.new thread, @timeout
     end
 
     private

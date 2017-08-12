@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'newque/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = 'write_xlsx'
+  gem.name          = 'newque'
   gem.version       = Newque::VERSION
   gem.authors       = ['Simon Grondin']
   gem.email         = ['simon.grondin@outlook.com']

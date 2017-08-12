@@ -7,9 +7,11 @@ module Newque
     let(:channel) { 'example_fifo' }
 
     before(:each) do
-      @producer1 = Client.new(:zmq, '127.0.0.1', 8005)
-      @consumer1 = Fifo_client.new '127.0.0.1', 8007
-      @consumer2 = Fifo_client.new '127.0.0.1', 8007
+      host = '127.0.0.1'
+      timeout = 3000
+      @producer1 = Client.new(:zmq, host, 8005, timeout:timeout)
+      @consumer1 = Fifo_client.new host, 8007
+      @consumer2 = Fifo_client.new host, 8007
     end
 
     after(:each) do
@@ -27,8 +29,8 @@ module Newque
         Write_response.new 9
       end
 
-      ready.join
-      write = @producer1.write(channel, false, messages).value
+      ready.get
+      write = @producer1.write(channel, false, messages).get
       expect(write.saved).to eq 9
     end
 
@@ -42,8 +44,8 @@ module Newque
         Read_response.new 2, 'some_id', 12345, ['msg123', 'msg456']
       end
 
-      ready.join
-      read = @producer1.read(channel, 'many 2').join(0.5).value
+      ready.get
+      read = @producer1.read(channel, 'many 2').get
       expect(read.length).to eq 2
       expect(read.last_id).to_not be_empty
       expect(read.last_timens).to be_a_kind_of Numeric
@@ -57,8 +59,8 @@ module Newque
         Count_response.new 8
       end
 
-      ready.join
-      count = @producer1.count(channel).join(0.5).value
+      ready.get
+      count = @producer1.count(channel).get
       expect(count.count).to eq 8
     end
 
@@ -69,8 +71,8 @@ module Newque
         Delete_response.new
       end
 
-      ready.join
-      @producer1.delete(channel).join(0.5)
+      ready.get
+      @producer1.delete(channel).get
     end
 
     it 'should check health' do
@@ -81,14 +83,14 @@ module Newque
         Health_response.new
       end
 
-      ready.join
-      health = @producer1.health(channel, true).join(0.5).value
+      ready.get
+      health = @producer1.health(channel, true).get
     end
 
     it 'should not be connected twice' do
       expect {
         ready = @consumer1.connect { puts; }
-        ready.join
+        ready.get
       }.to_not raise_error
 
       expect {
@@ -104,9 +106,9 @@ module Newque
         'SOME STRING'
       end
 
-      ready.join
+      ready.get
       expect {
-        @producer1.count(channel).join(0.5)
+        @producer1.count(channel).get
       }.to raise_error NewqueError
     end
 
@@ -117,9 +119,9 @@ module Newque
         Delete_response.new
       end
 
-      ready.join
+      ready.get
       expect {
-        @producer1.count(channel).join(0.5)
+        @producer1.count(channel).get
       }.to raise_error NewqueError
     end
 
