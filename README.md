@@ -51,7 +51,7 @@ result.value # => waits until the call completes and returns a Newque::Write_Res
 - **atomic** (`Bool`) Whether the messages should be treated as one.
 - **messages** (`Array` of `String`s) The messages to send.
 
-Returns a `Thread`. The value returned by the thread will be a [`Newque::Write_Response`](#write_response).
+Returns a `Future`. The value returned by the Future will be a [`Newque::Write_Response`](#write_response).
 
 #### .read
 ```ruby
@@ -62,7 +62,7 @@ result.value # => waits until the call completes and returns a Newque::Read_Resp
 - **mode** (`String`) Newque Reading Mode.
 - **limit** (Optional `Integer`) The maximum number of messages to receive. `nil` by default.
 
-Returns a `Thread`. The value returned by the thread will be a [`Newque::Read_Response`](#read-response).
+Returns a `Future`. The value returned by the Future will be a [`Newque::Read_Response`](#read-response).
 
 #### .read_stream
 ```ruby
@@ -81,7 +81,7 @@ result.value # => waits until the call completes and returns a Newque::Count_Res
 ```
 - **channel** (`String`) Name of the channel.
 
-Returns a `Thread`. The value returned by the thread will be a [`Newque::Count_Response`](#count-response).
+Returns a `Future`. The value returned by the Future will be a [`Newque::Count_Response`](#count-response).
 
 #### .delete
 ```ruby
@@ -90,7 +90,7 @@ result.value # => waits until the call completes and returns a Newque::Delete_Re
 ```
 - **channel** (`String`) Name of the channel.
 
-Returns a `Thread`. The value returned by the thread will be a [`Newque::Delete_Response`](#delete-response).
+Returns a `Future`. The value returned by the Future will be a [`Newque::Delete_Response`](#delete-response).
 
 #### .health
 ```ruby
@@ -100,7 +100,7 @@ result.value # => waits until the call completes and returns a Newque::Health_Re
 - **channel** (`String`) Name of the channel.
 - **global** (`Bool`) Whether this health check should check all the channels on the server or just this one.
 
-Returns a `Thread`. The value returned by the thread will be a [`Newque::Health_Response`](#health-response).
+Returns a `Future`. The value returned by the Future will be a [`Newque::Health_Response`](#health-response).
 
 ## Pubsub Client
 A Pubsub Client is a special type of client that can listen to requests coming from a Newque Pubsub endpoint. These Pubsub Clients are the subscribers. It's possible to have any number of Pubsub Clients active at any time.
@@ -123,9 +123,9 @@ sub_id = ready.value # Waits until we are connected and returns the sub_id
 ```
 Each time a request is sent to the Pubsub endpoint, this block will be invoked. The `input` argument is an [Input_request](#input-request).
 
-`.subscribe` takes a block and returns a Thread that evaluates to a Subscription ID. That Sub ID can then be given to `.unsubscribe` later to deactivate this specific block.
+`.subscribe` takes a block and returns a Future that evaluates to a Subscription ID. That Sub ID can then be given to `.unsubscribe` later to deactivate this specific block.
 
-The Thread that was returned by `.subscribe` does not resolve until the block is actively listening, which can take a few milliseconds.
+The Future that was returned by `.subscribe` does not resolve until the block is actively listening, which can take a few milliseconds.
 
 It's possible to call `.subscribe` on the same Pubsub Client many times to register multiple blocks. A Pubsub Client doesn't open a connection to the server until a block is registered.
 
@@ -176,7 +176,7 @@ ready.join # Only needed if we wish to wait until the Fifo Client is ready
 
 To return an error to the client that sent the request to Newque, just raise an exception from within the block!
 
-`.connect` returns a Thread that resolves once the Fifo Client is fully connected. Calling `.connect` on a Fifo Client that is already connected will raise an exception.
+`.connect` returns a Future that resolves once the Fifo Client is fully connected. Calling `.connect` on a Fifo Client that is already connected will raise an exception.
 
 #### .disconnect
 ```ruby
@@ -189,7 +189,7 @@ The [Thread](https://ruby-doc.org/core-2.2.0/Thread.html) is Ruby's basic concur
 
 Newque-Ruby makes heavy use of Threads, since for example, a Pubsub Client waiting for requests should not "take up" your only allowed active Ruby Thread!
 
-If you are familiar with Promises or Futures in other languages, the Future objects returned by Newque-Ruby are very similar.
+Most method calls on Newque-Ruby return a `Future`, which is just a simple object to manage the underlying Ruby Thread. If you are familiar with Promises in other languages, the Future objects returned by Newque-Ruby are very similar.
 
 Most gems simply block and assume the user will wrap those blocking calls in a `Thread.new` if they feel brave. Due to the fact that a Newque::Client with ZMQ uses a single multiplexing connection (unlike HTTP) and that we want operations (writes, reads, etc.) -which can terminate in a different order- to be executed in parallel, Newque-Ruby operations have to return Futures that will *resolve* to the desired result. In order to keep Newque::Clients with HTTP identical to ZMQ ones, those return Futures too.
 
